@@ -25,7 +25,7 @@ Updates are reflected both remotely and locally.
 
 Delete Task
 
-Remove tasks via delete icon (🗑️).
+Remove tasks via delete icon.
 
 Updates local and remote databases.
 
