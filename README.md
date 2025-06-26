@@ -70,3 +70,5 @@ LiveData used to observe tasks and insertion status.
 
 Compose observes changes reactively with observeAsState.
 
+📦 Version Catalog (libs.versions.toml)
+
