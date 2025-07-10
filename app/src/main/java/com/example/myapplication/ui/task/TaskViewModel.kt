@@ -7,13 +7,28 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.myapplication.data.model.TodoItem
 import com.example.myapplication.data.repository.TaskRepository
+import com.example.myapplication.util.ConnectivityObserver
 import com.example.myapplication.util.resource.Resource
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
-class TaskViewModel @Inject constructor(private val taskRepository: TaskRepository) : ViewModel() {
+class TaskViewModel @Inject constructor(
+    private val taskRepository: TaskRepository,
+    private val connectivityObserver: ConnectivityObserver) : ViewModel() {
+
+    private val _networkStatus = MutableStateFlow(ConnectivityObserver.Status.Available)
+    val networkStatus: StateFlow<ConnectivityObserver.Status> = _networkStatus
+
+    private val _deleteStatus = MutableLiveData<String?>()
+    val deleteStatus: LiveData<String?> = _deleteStatus
+
+    fun clearDeleteStatus() {
+        _deleteStatus.value = null
+    }
 
     private val _insertStatus = MutableLiveData<String>()
     val insertStatus: LiveData<String> get() = _insertStatus
@@ -22,6 +37,14 @@ class TaskViewModel @Inject constructor(private val taskRepository: TaskReposito
     val tasks: LiveData<List<TodoItem>> get() = _tasks
 
     init {
+
+        viewModelScope.launch {
+
+            connectivityObserver.observe().collect { status ->
+                Log.e("hello",_networkStatus.value.toString())
+                _networkStatus.value = status
+            }
+        }
         observeLocalTasks()
     }
 
@@ -53,16 +76,24 @@ class TaskViewModel @Inject constructor(private val taskRepository: TaskReposito
 
     fun deleteTask(id: Int) {
         viewModelScope.launch {
-            taskRepository.deleteRemoteTask(id)
-            taskRepository.deleteLocalTask(id)
+            if (_networkStatus.value != ConnectivityObserver.Status.Available) {
+                _deleteStatus.value = "No Internet Connection"
+            } else {
+                taskRepository.deleteRemoteTask(id)
+                taskRepository.deleteLocalTask(id)
+            }
         }
     }
 
     fun toggleCompleted(task: TodoItem) {
         val updated = task.copy(completed = !task.completed)
         viewModelScope.launch {
-            taskRepository.updateRemoteTask(updated)
-            taskRepository.updateLocalTask(updated)
+            if (_networkStatus.value != ConnectivityObserver.Status.Available) {
+                _deleteStatus.value = "No Internet Connection"
+            } else {
+                taskRepository.updateRemoteTask(updated)
+                taskRepository.updateLocalTask(updated)
+            }
         }
     }
 
@@ -72,16 +103,25 @@ class TaskViewModel @Inject constructor(private val taskRepository: TaskReposito
 
     fun addTask(title: String) {
         viewModelScope.launch {
-            _insertStatus.value = "Inserting..."
-            val result = taskRepository.insertRemoteTask(TodoItem(todo = title,
-                id = 0,
-                completed = false,
-                userId = 1 ))
-            if (result is Resource.Success && result.data != null) {
-                taskRepository.insertLocalTasks(listOf(result.data))
-                _insertStatus.value = "Task #${result.data.id} inserted successfully!"
-            } else {
-                _insertStatus.value = "Failed to insert task: ${result.message}"
+            if (_networkStatus.value != ConnectivityObserver.Status.Available) {
+                _deleteStatus.value = "No Internet Connection"
+            }
+            else {
+                _insertStatus.value = "Inserting..."
+                val result = taskRepository.insertRemoteTask(
+                    TodoItem(
+                        todo = title,
+                        id = 0,
+                        completed = false,
+                        userId = 1
+                    )
+                )
+                if (result is Resource.Success && result.data != null) {
+                    taskRepository.insertLocalTasks(listOf(result.data))
+                    _insertStatus.value = "Task #${result.data.id} inserted successfully!"
+                } else {
+                    _insertStatus.value = "Failed to insert task: ${result.message}"
+                }
             }
         }
     }

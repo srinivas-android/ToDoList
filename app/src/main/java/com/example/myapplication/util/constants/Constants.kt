@@ -3,6 +3,5 @@ package com.example.myapplication.util.constants
 object Constants {
 
     const val BASE_URL = "https://dummyjson.com"
-    const val TODOS_ENDPOINT = "todos"
-    const val ALL_CATEGORIES = "todos/"
+    const val TODOS_ENDPOINT = "todos/"
 }

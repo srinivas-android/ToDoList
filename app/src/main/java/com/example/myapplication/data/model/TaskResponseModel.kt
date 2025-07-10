@@ -23,3 +23,10 @@ data class TodoItem(
     val completed: Boolean,
     val userId: Int
 ): Parcelable
+@Parcelize
+data class UpdateTaskRequest(
+    @PrimaryKey
+    val todo: String,
+    val completed: Boolean,
+    val userId: Int
+): Parcelable

@@ -7,6 +7,7 @@ import androidx.paging.PagingData
 import com.example.myapplication.data.model.TaskResponseModel
 import com.example.myapplication.data.source.remote.SetTaskApi
 import com.example.myapplication.data.model.TodoItem
+import com.example.myapplication.data.model.UpdateTaskRequest
 import com.example.myapplication.data.paging.TaskPaging
 import com.example.myapplication.data.source.local.TaskDao
 import com.example.myapplication.util.resource.Resource
@@ -25,7 +26,14 @@ class TaskRepository @Inject constructor(private val api: SetTaskApi, private va
 
     suspend fun insertRemoteTasks(task: TodoItem): TodoItem = api.addTask(task)
 
-    suspend fun updateRemoteTask(task: TodoItem): TodoItem = api.updateTask(task.id, task)
+    suspend fun updateRemoteTask(task: TodoItem): TodoItem  {
+        val request = UpdateTaskRequest(
+            todo = task.todo,
+            completed = task.completed,
+            userId = task.userId
+        )
+        return api.updateTask(task.id, request)
+    }
 
     suspend fun deleteRemoteTask(id: Int): TodoItem = api.deleteTask(id)
 
